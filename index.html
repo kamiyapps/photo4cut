@@ -45,7 +45,7 @@
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
       background: #000;
-      aspect-ratio: 3/4; /* 세로로 긴 비율 */
+      aspect-ratio: 3/4;
       max-width: 100%;
       margin: 0 auto;
     }
@@ -177,6 +177,56 @@
     .photo-dot.captured {
       background: #4caf50;
       box-shadow: 0 0 10px rgba(76,175,80,0.6);
+    }
+
+    /* 설정 섹션 */
+    .settings-section {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .settings-section h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      color: #fff;
+    }
+
+    /* 배경 선택 */
+    .bg-selector {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .bg-btn {
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .bg-btn:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.5);
+      transform: translateY(-2px);
+    }
+
+    .bg-btn.active {
+      background: rgba(255,255,255,0.95);
+      color: #667eea;
+      border-color: #fff;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
     }
 
     /* 필터 선택 */
@@ -320,7 +370,7 @@
         font-size: 16px;
       }
 
-      .filter-btn {
+      .filter-btn, .bg-btn {
         font-size: 12px;
         padding: 8px 14px;
       }
@@ -353,17 +403,28 @@
     <div class="photo-indicator" id="photoIndicator"></div>
     <div id="progress"></div>
 
-    <!-- 필터 선택 -->
-    <div id="controls">
-      <button class="filter-btn active" onclick="setFilter('none', this)">✨ 원본</button>
-      <button class="filter-btn" onclick="setFilter('grayscale(100%)', this)">⚫ 흑백</button>
-      <button class="filter-btn" onclick="setFilter('sepia(80%)', this)">📸 빈티지</button>
-      <button class="filter-btn" onclick="setFilter('contrast(120%) saturate(150%)', this)">🌈 선명</button>
-      <button class="filter-btn" onclick="setFilter('brightness(110%) contrast(110%)', this)">☀️ 밝게</button>
-      <button class="filter-btn" onclick="setFilter('saturate(200%) hue-rotate(10deg)', this)">🎨 생동감</button>
-      <button class="filter-btn" onclick="setFilter('grayscale(50%) sepia(30%)', this)">🎞️ 필름</button>
-      <button class="filter-btn" onclick="setFilter('contrast(110%) brightness(105%) saturate(120%) hue-rotate(-5deg)', this)">🌸 소프트</button>
-      <button class="filter-btn" onclick="setFilter('saturate(80%) hue-rotate(180deg)', this)">💙 블루톤</button>
+    <!-- 설정 섹션 -->
+    <div class="settings-section">
+      <h3>🎨 배경 선택</h3>
+      <div class="bg-selector">
+        <button class="bg-btn" onclick="setBackground('live', this)">📹 실시간</button>
+        <button class="bg-btn active" onclick="setBackground('gray', this)">⚫ 회색</button>
+        <button class="bg-btn" onclick="setBackground('white', this)">⚪ 화이트</button>
+        <button class="bg-btn" onclick="setBackground('blur', this)">🌫️ 흐림</button>
+      </div>
+
+      <h3>✨ 필터 선택</h3>
+      <div id="controls">
+        <button class="filter-btn" onclick="setFilter('none', this)">원본</button>
+        <button class="filter-btn active" onclick="setFilter('soft', this)">🌸 뽀샤시</button>
+        <button class="filter-btn" onclick="setFilter('bright', this)">✨ 화사</button>
+        <button class="filter-btn" onclick="setFilter('grayscale(100%)', this)">⚫ 흑백</button>
+        <button class="filter-btn" onclick="setFilter('sepia(80%)', this)">📸 빈티지</button>
+        <button class="filter-btn" onclick="setFilter('contrast(120%) saturate(150%)', this)">🌈 선명</button>
+        <button class="filter-btn" onclick="setFilter('vivid', this)">🎨 생동감</button>
+        <button class="filter-btn" onclick="setFilter('film', this)">🎞️ 필름</button>
+        <button class="filter-btn" onclick="setFilter('blue', this)">💙 블루톤</button>
+      </div>
     </div>
 
     <button id="startBtn" disabled>촬영 시작 🎬</button>
@@ -380,6 +441,7 @@
 </div>
 
 <canvas id="canvas"></canvas>
+<canvas id="bgCanvas" style="display:none;"></canvas>
 
 <script>
 /* =====================
@@ -389,7 +451,7 @@ const CONFIG = {
   storeName: "📸 INSANG PHOTO",
   brandText: "KEEP YOURSELF ALIVE",
   autoResetSec: 30,
-  photoAspectRatio: 3/4  // 세로로 긴 비율
+  photoAspectRatio: 3/4
 };
 
 /* =====================
@@ -397,6 +459,7 @@ const CONFIG = {
 ===================== */
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
+const bgCanvas = document.getElementById("bgCanvas");
 const countdownEl = document.getElementById("countdown");
 const resultImg = document.getElementById("result");
 const qrImg = document.getElementById("qr");
@@ -409,9 +472,22 @@ const errorTextEl = document.getElementById("errorText");
 const loadingEl = document.getElementById("loading");
 
 let photos = [];
-let selectedFilter = "none";
+let selectedFilter = "soft";  // 기본 뽀샤시
+let selectedBackground = "gray";  // 기본 회색
 let isBusy = false;
 let stream = null;
+
+/* =====================
+   필터 프리셋
+===================== */
+const FILTER_PRESETS = {
+  'none': 'none',
+  'soft': 'brightness(105%) contrast(95%) saturate(110%) blur(0.3px)',  // 뽀샤시 효과
+  'bright': 'brightness(115%) contrast(105%) saturate(120%)',  // 화사하게
+  'vivid': 'saturate(200%) hue-rotate(10deg)',
+  'film': 'grayscale(50%) sepia(30%)',
+  'blue': 'saturate(80%) hue-rotate(180deg)'
+};
 
 /* =====================
    카메라 권한 요청
@@ -479,6 +555,21 @@ function showError(err) {
 }
 
 /* =====================
+   배경 선택
+===================== */
+function setBackground(bg, btn) {
+  selectedBackground = bg;
+  
+  document.querySelectorAll('.bg-btn').forEach(b => {
+    b.classList.remove('active');
+  });
+  
+  if (btn) {
+    btn.classList.add('active');
+  }
+}
+
+/* =====================
    필터 선택
 ===================== */
 function setFilter(filter, btn) {
@@ -492,7 +583,10 @@ function setFilter(filter, btn) {
     btn.classList.add('active');
   }
   
-  video.style.filter = filter;
+  // 실시간 미리보기 (배경이 live일 때만)
+  if (selectedBackground === 'live') {
+    video.style.filter = FILTER_PRESETS[filter] || filter;
+  }
 }
 
 /* =====================
@@ -582,17 +676,67 @@ function countdown(sec) {
 }
 
 /* =====================
+   배경 생성
+===================== */
+function createBackground(width, height) {
+  bgCanvas.width = width;
+  bgCanvas.height = height;
+  const ctx = bgCanvas.getContext("2d");
+  
+  switch(selectedBackground) {
+    case 'gray':
+      // 회색 그라데이션
+      const grayGradient = ctx.createLinearGradient(0, 0, 0, height);
+      grayGradient.addColorStop(0, '#b0b0b0');
+      grayGradient.addColorStop(1, '#808080');
+      ctx.fillStyle = grayGradient;
+      ctx.fillRect(0, 0, width, height);
+      break;
+      
+    case 'white':
+      // 화이트
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(0, 0, width, height);
+      break;
+      
+    case 'blur':
+      // 흐린 배경 (비디오 블러)
+      ctx.filter = 'blur(20px) brightness(0.8)';
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      ctx.drawImage(video, 0, 0, vw, vh, 0, 0, width, height);
+      ctx.filter = 'none';
+      break;
+      
+    case 'live':
+      // 실시간 배경 (필터 없음)
+      break;
+  }
+  
+  return bgCanvas;
+}
+
+/* =====================
    촬영
 ===================== */
 function capture() {
   const targetWidth = 600;
-  const targetHeight = 800;  // 3:4 비율
+  const targetHeight = 800;
 
   canvas.width = targetWidth;
   canvas.height = targetHeight;
 
   const ctx = canvas.getContext("2d");
-  ctx.filter = selectedFilter;
+  
+  // 배경 그리기
+  if (selectedBackground !== 'live') {
+    const bg = createBackground(targetWidth, targetHeight);
+    ctx.drawImage(bg, 0, 0);
+  }
+
+  // 필터 적용
+  const filterValue = FILTER_PRESETS[selectedFilter] || selectedFilter;
+  ctx.filter = filterValue;
 
   const vw = video.videoWidth;
   const vh = video.videoHeight;
@@ -602,20 +746,41 @@ function capture() {
   let cropW, cropH, sx, sy;
 
   if (vw / vh > aspectRatio) {
-    // 비디오가 더 넓음 - 좌우를 잘라냄
     cropH = vh;
     cropW = vh * aspectRatio;
     sx = (vw - cropW) / 2;
     sy = 0;
   } else {
-    // 비디오가 더 높음 - 상하를 잘라냄
     cropW = vw;
     cropH = vw / aspectRatio;
     sx = 0;
     sy = (vh - cropH) / 2;
   }
 
-  ctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, targetWidth, targetHeight);
+  // 배경이 live일 경우 전체 그리기, 아니면 중앙에 사람만
+  if (selectedBackground === 'live') {
+    ctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, targetWidth, targetHeight);
+  } else {
+    // 사람 부분만 추출 (중앙 80%)
+    const personScale = 0.8;
+    const personWidth = targetWidth * personScale;
+    const personHeight = targetHeight * personScale;
+    const personX = (targetWidth - personWidth) / 2;
+    const personY = (targetHeight - personHeight) / 2;
+    
+    ctx.drawImage(video, sx, sy, cropW, cropH, personX, personY, personWidth, personHeight);
+  }
+  
+  // 뽀샤시 효과 추가 (필터가 soft일 때)
+  if (selectedFilter === 'soft') {
+    // 약간의 가우시안 블러 효과
+    ctx.filter = 'blur(0.5px)';
+    ctx.globalAlpha = 0.3;
+    ctx.drawImage(canvas, 0, 0);
+    ctx.globalAlpha = 1.0;
+    ctx.filter = 'none';
+  }
+
   photos.push(canvas.toDataURL("image/png"));
 }
 
@@ -662,12 +827,17 @@ function combinePhotos() {
         ctx.drawImage(img, x, y, frameWidth, photoHeight);
         ctx.restore();
         
-        // 사진 테두리
-        ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-        ctx.lineWidth = 3;
+        // 사진 테두리 (부드러운 그림자)
+        ctx.shadowColor = 'rgba(0,0,0,0.15)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 5;
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.roundRect(x, y, frameWidth, photoHeight, 20);
         ctx.stroke();
+        ctx.shadowColor = 'transparent';
         
         loadedCount++;
         
@@ -729,7 +899,6 @@ function addDecoration(canvas) {
   const topMargin = 120;
   const photoHeight = 800;
   const gap = 15;
-  const sideMargin = 40;
   
   for (let i = 0; i < 4; i++) {
     const y = topMargin + (i * (photoHeight + gap)) + photoHeight / 2;
@@ -788,7 +957,10 @@ function resetKiosk() {
   startBtn.disabled = false;
   startBtn.textContent = "촬영 시작 🎬";
   isBusy = false;
-  video.style.filter = selectedFilter;
+  
+  if (selectedBackground === 'live') {
+    video.style.filter = FILTER_PRESETS[selectedFilter] || selectedFilter;
+  }
 }
 
 /* =====================
