@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>인생네컷</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      text-align: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 20px 0 30px;
+      font-size: 32px;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      letter-spacing: -0.5px;
+    }
+
+    #camera {
+      position: relative;
+      margin-bottom: 20px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      background: #000;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video {
+      width: 100%;
+      display: none;
+      background: #000;
+    }
+
+    video.ready {
+      display: block;
+    }
+
+    #countdown {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 96px;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(255,235,59,0.8),
+                   0 0 40px rgba(255,235,59,0.6);
+      display: none;
+      animation: pulse 0.5s ease-in-out;
+      z-index: 10;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    /* 에러/안내 메시지 스타일 */
+    .message-box {
+      display: none;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      text-align: left;
+      line-height: 1.6;
+    }
+
+    .message-box.show {
+      display: block;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    #errorMessage {
+      background: rgba(244, 67, 54, 0.9);
+    }
+
+    #infoMessage {
+      background: rgba(33, 150, 243, 0.9);
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-box h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+    }
+
+    .message-box p {
+      margin: 8px 0;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .message-box ol {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .message-box li {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    .action-btn {
+      margin-top: 15px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 25px;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      margin-right: 10px;
+    }
+
+    .action-btn.primary {
+      background: #fff;
+      color: #f44336;
+    }
+
+    .action-btn.secondary {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+
+    #progress {
+      margin-top: 10px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+      min-height: 20px;
+    }
+
+    #controls {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .filter-btn:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .filter-btn.active {
+      background: rgba(255,255,255,0.9);
+      color: #667eea;
+      border-color: #fff;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+
+    #startBtn {
+      padding: 16px 48px;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 30px;
+      border: none;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 20px rgba(245,87,108,0.4);
+      margin: 20px 0;
+    }
+
+    #startBtn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(245,87,108,0.5);
+    }
+
+    #startBtn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    #startBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: #999;
+      box-shadow: none;
+    }
+
+    .result-section {
+      margin-top: 30px;
+    }
+
+    #result, #qr {
+      max-width: 100%;
+      border-radius: 16px;
+      margin-top: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      background: #fff;
+    }
+
+    #result {
+      display: none;
+    }
+
+    #result.show {
+      display: block;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    #qr {
+      display: none;
+      padding: 10px;
+      max-width: 220px;
+      margin: 15px auto;
+    }
+
+    #qr.show {
+      display: block;
+      animation: fadeIn 0.5s ease-in 0.3s both;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    canvas {
+      display: none;
+    }
+
+    .photo-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 15px;
+      min-height: 12px;
+    }
+
+    .photo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      transition: all 0.3s ease;
+    }
+
+    .photo-dot.captured {
+      background: #4caf50;
+      box-shadow: 0 0 10px rgba(76,175,80,0.6);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255,255,255,0.7);
+      font-size: 16px;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top: 3px solid #fff;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 26px;
+      }
+
+      #countdown {
+        font-size: 72px;
+      }
+
+      #startBtn {
+        padding: 14px 36px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>📸 인생네컷</h1>
+
+  <!-- 정보 메시지 -->
+  <div id="infoMessage" class="message-box">
+    <h3>💡 중요 안내</h3>
+    <p id="infoText"></p>
+    <button class="action-btn secondary" onclick="hideInfo()">확인</button>
+  </div>
+
+  <!-- 에러 메시지 -->
+  <div id="errorMessage" class="message-box">
+    <h3>⚠️ 카메라 접근 오류</h3>
+    <p id="errorText"></p>
+    <button class="action-btn primary" onclick="requestCamera()">권한 다시 요청</button>
+    <button class="action-btn secondary" onclick="showInfo()">해결 방법 보기</button>
+  </div>
+
+  <div id="camera">
+    <video id="video" autoplay playsinline muted></video>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      카메라를 준비하는 중입니다...
+    </div>
+    <div id="countdown"></div>
+  </div>
+
+  <div class="photo-indicator" id="photoIndicator"></div>
+  <div id="progress"></div>
+
+  <div id="controls">
+    <button class="filter-btn active" onclick="setFilter('none', this)">원본</button>
+    <button class="filter-btn" onclick="setFilter('grayscale(100%)', this)">흑백</button>
+    <button class="filter-btn" onclick="setFilter('sepia(70%)', this)">빈티지</button>
+    <button class="filter-btn" onclick="setFilter('contrast(120%) saturate(150%)', this)">선명</button>
+  </div>
+
+  <button id="startBtn" disabled>촬영 시작 🎬</button>
+
+  <div class="result-section">
+    <img id="result" />
+    <img id="qr" />
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+/* =====================
+   설정
+===================== */
+const CONFIG = {
+  storeName: "INSANG PHOTO",
+  autoResetSec: 20,
+  frame: "" // 프레임 이미지 URL (선택사항)
+};
+
+/* =====================
+   전역 변수
+===================== */
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const countdownEl = document.getElementById("countdown");
+const resultImg = document.getElementById("result");
+const qrImg = document.getElementById("qr");
+const startBtn = document.getElementById("startBtn");
+const progressEl = document.getElementById("progress");
+const photoIndicatorEl = document.getElementById("photoIndicator");
+const errorMessageEl = document.getElementById("errorMessage");
+const infoMessageEl = document.getElementById("infoMessage");
+const errorTextEl = document.getElementById("errorText");
+const infoTextEl = document.getElementById("infoText");
+const loadingEl = document.getElementById("loading");
+
+let photos = [];
+let selectedFilter = "none";
+let isBusy = false;
+let stream = null;
+let cameraTimeout = null;
+
+/* =====================
+   프로토콜 체크
+===================== */
+function checkProtocol() {
+  const protocol = window.location.protocol;
+  
+  if (protocol === 'file:') {
+    showInfo();
+    infoTextEl.innerHTML = `
+      <strong>⚠️ 로컬 파일로 열려있습니다</strong><br><br>
+      보안상의 이유로 <code>file://</code> 프로토콜에서는 카메라를 사용할 수 없습니다.<br><br>
+      <strong>해결 방법:</strong><br>
+      1. 이 파일을 웹 서버에 업로드하세요 (GitHub Pages, Netlify, Vercel 등)<br>
+      2. 또는 로컬 웹 서버를 실행하세요:<br>
+      <code style="background:rgba(0,0,0,0.3); padding:5px; border-radius:5px; display:inline-block; margin-top:5px;">
+      python -m http.server 8000
+      </code>
+    `;
+    return false;
+  }
+  
+  if (protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    showInfo();
+    infoTextEl.innerHTML = `
+      <strong>⚠️ HTTPS가 필요합니다</strong><br><br>
+      보안상의 이유로 카메라는 HTTPS 연결에서만 사용할 수 있습니다.<br><br>
+      현재 주소: <code>${window.location.href}</code><br><br>
+      <strong>해결 방법:</strong><br>
+      1. HTTPS를 지원하는 호스팅 서비스를 사용하세요<br>
+      2. 또는 localhost에서 테스트하세요
+    `;
+    return false;
+  }
+  
+  return true;
+}
+
+/* =====================
+   카메라 권한 요청
+===================== */
+async function requestCamera() {
+  // 프로토콜 체크
+  if (!checkProtocol()) {
+    startBtn.disabled = true;
+    return;
+  }
+
+  errorMessageEl.classList.remove('show');
+  infoMessageEl.classList.remove('show');
+  loadingEl.style.display = 'block';
+  video.classList.remove('ready');
+  
+  // 이전 스트림 정리
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  // 타임아웃 설정 (10초)
+  cameraTimeout = setTimeout(() => {
+    if (!stream) {
+      showError({
+        name: 'TimeoutError',
+        message: '카메라 연결 시간이 초과되었습니다.'
+      });
+    }
+  }, 10000);
+
+  try {
+    // 먼저 권한 상태 확인 (지원하는 브라우저의 경우)
+    if (navigator.permissions && navigator.permissions.query) {
+      try {
+        const result = await navigator.permissions.query({ name: 'camera' });
+        console.log('Camera permission:', result.state);
+        
+        if (result.state === 'denied') {
+          throw new Error('Permission denied');
+        }
+      } catch (e) {
+        // 권한 API를 지원하지 않는 브라우저
+        console.log('Permissions API not supported');
+      }
+    }
+
+    // 카메라 스트림 요청
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+
+    clearTimeout(cameraTimeout);
+    
+    video.srcObject = stream;
+    
+    // 비디오가 실제로 재생 가능할 때까지 대기
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = () => {
+        video.play()
+          .then(resolve)
+          .catch(reject);
+      };
+      
+      // 타임아웃 설정
+      setTimeout(() => reject(new Error('Video load timeout')), 5000);
+    });
+
+    // 성공!
+    loadingEl.style.display = 'none';
+    video.classList.add('ready');
+    startBtn.disabled = false;
+    progressEl.textContent = "✅ 준비 완료! 촬영 시작 버튼을 눌러주세요";
+    progressEl.style.color = "#4caf50";
+
+  } catch (err) {
+    clearTimeout(cameraTimeout);
+    console.error('Camera error:', err);
+    loadingEl.style.display = 'none';
+    showError(err);
+  }
+}
+
+/* =====================
+   에러 메시지 표시
+===================== */
+function showError(err) {
+  let message = '';
+  
+  console.log('Error name:', err.name);
+  console.log('Error message:', err.message);
+  
+  if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError' || err.message === 'Permission denied') {
+    message = `
+      <strong>카메라 권한이 거부되었습니다</strong><br><br>
+      <strong>Android Chrome 해결 방법:</strong><br>
+      1. 주소창 왼쪽의 🔒 또는 🛈 아이콘 클릭<br>
+      2. "권한" 또는 "사이트 설정" 클릭<br>
+      3. "카메라"를 "허용"으로 변경<br>
+      4. 페이지 새로고침<br><br>
+      <strong>또는 브라우저 설정에서:</strong><br>
+      설정 → 사이트 설정 → 카메라 → 이 사이트 허용
+    `;
+  } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+    message = `
+      <strong>카메라를 찾을 수 없습니다</strong><br><br>
+      • 기기에 카메라가 있는지 확인하세요<br>
+      • 다른 앱에서 카메라를 사용 중이면 종료하세요
+    `;
+  } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+    message = `
+      <strong>카메라가 이미 사용 중입니다</strong><br><br>
+      다른 앱(카메라, 화상통화 등)을 종료한 후 다시 시도하세요.
+    `;
+  } else if (err.name === 'NotSupportedError' || err.name === 'TypeError') {
+    message = `
+      <strong>브라우저에서 카메라를 지원하지 않습니다</strong><br><br>
+      • Chrome, Safari, Firefox 최신 버전을 사용하세요<br>
+      • HTTPS 연결인지 확인하세요
+    `;
+  } else if (err.name === 'TimeoutError') {
+    message = `
+      <strong>카메라 연결 시간이 초과되었습니다</strong><br><br>
+      • 네트워크 연결을 확인하세요<br>
+      • 페이지를 새로고침하고 다시 시도하세요
+    `;
+  } else {
+    message = `
+      <strong>알 수 없는 오류가 발생했습니다</strong><br><br>
+      오류: ${err.name || 'Unknown'}<br>
+      메시지: ${err.message || 'No details'}<br><br>
+      페이지를 새로고침하고 다시 시도하세요.
+    `;
+  }
+  
+  errorTextEl.innerHTML = message;
+  errorMessageEl.classList.add('show');
+  startBtn.disabled = true;
+}
+
+/* =====================
+   정보 메시지
+===================== */
+function showInfo() {
+  infoMessageEl.classList.add('show');
+}
+
+function hideInfo() {
+  infoMessageEl.classList.remove('show');
+}
+
+/* =====================
+   필터 선택
+===================== */
+function setFilter(filter, btn) {
+  selectedFilter = filter;
+  
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active');
+  });
+  
+  if (btn) {
+    btn.classList.add('active');
+  }
+  
+  video.style.filter = filter;
+}
+
+/* =====================
+   포토 인디케이터 초기화
+===================== */
+function initPhotoIndicator() {
+  photoIndicatorEl.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'photo-dot';
+    dot.id = `dot-${i}`;
+    photoIndicatorEl.appendChild(dot);
+  }
+}
+
+/* =====================
+   시작 버튼
+===================== */
+startBtn.onclick = async () => {
+  if (isBusy || !stream) return;
+  
+  isBusy = true;
+  startBtn.disabled = true;
+  startBtn.textContent = "촬영 중...";
+  
+  resultImg.classList.remove('show');
+  qrImg.classList.remove('show');
+  
+  photos = [];
+  initPhotoIndicator();
+  
+  for (let i = 0; i < 4; i++) {
+    progressEl.textContent = `${i + 1}/4 준비...`;
+    progressEl.style.color = "rgba(255,255,255,0.8)";
+    await countdown(3);
+    capture();
+    document.getElementById(`dot-${i}`).classList.add('captured');
+    progressEl.textContent = `${i + 1}/4 촬영 완료! ✓`;
+    progressEl.style.color = "#4caf50";
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+
+  progressEl.textContent = "사진 합성 중...";
+  progressEl.style.color = "rgba(255,255,255,0.8)";
+  
+  const finalCanvas = await combinePhotos();
+  
+  if (CONFIG.frame) {
+    await drawFrame(finalCanvas);
+  }
+  
+  drawMeta(finalCanvas);
+  
+  resultImg.src = finalCanvas.toDataURL("image/png");
+  resultImg.classList.add('show');
+  
+  progressEl.textContent = "QR 코드 생성 중...";
+  await generateQR(finalCanvas);
+  qrImg.classList.add('show');
+  
+  progressEl.textContent = `🎉 완성! (${CONFIG.autoResetSec}초 후 자동 초기화)`;
+  progressEl.style.color = "#4caf50";
+  startBtn.textContent = "촬영 시작 🎬";
+
+  setTimeout(resetKiosk, CONFIG.autoResetSec * 1000);
+};
+
+/* =====================
+   카운트다운
+===================== */
+function countdown(sec) {
+  return new Promise(resolve => {
+    let count = sec;
+    countdownEl.style.display = "block";
+    countdownEl.textContent = count;
+
+    const timer = setInterval(() => {
+      count--;
+      if (count === 0) {
+        countdownEl.textContent = "📸";
+      } else if (count < 0) {
+        clearInterval(timer);
+        countdownEl.style.display = "none";
+        resolve();
+      } else {
+        countdownEl.textContent = count;
+      }
+    }, 1000);
+  });
+}
+
+/* =====================
+   촬영
+===================== */
+function capture() {
+  const w = 800;
+  const h = 300;
+
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+  ctx.filter = selectedFilter;
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  const cropW = vw * 0.7;
+  const cropH = vh * 0.7;
+  const sx = (vw - cropW) / 2;
+  const sy = (vh - cropH) / 2;
+
+  ctx.drawImage(video, sx, sy, cropW, cropH, 0, 0, w, h);
+  photos.push(canvas.toDataURL("image/png"));
+}
+
+/* =====================
+   4컷 합성
+===================== */
+function combinePhotos() {
+  return new Promise((resolve) => {
+    const out = document.createElement("canvas");
+    out.width = 800;
+    out.height = 1200;
+
+    const ctx = out.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, out.width, out.height);
+
+    let loadedCount = 0;
+    
+    photos.forEach((src, i) => {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, i * 300, 800, 300);
+        loadedCount++;
+        
+        if (loadedCount === photos.length) {
+          resolve(out);
+        }
+      };
+      img.src = src;
+    });
+  });
+}
+
+/* =====================
+   프레임
+===================== */
+function drawFrame(canvas) {
+  return new Promise((resolve) => {
+    if (!CONFIG.frame) {
+      resolve();
+      return;
+    }
+    
+    const ctx = canvas.getContext("2d");
+    const frame = new Image();
+    
+    frame.onload = () => {
+      ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
+      resolve();
+    };
+    
+    frame.onerror = () => {
+      resolve();
+    };
+    
+    frame.src = CONFIG.frame;
+  });
+}
+
+/* =====================
+   날짜 / 매장명
+===================== */
+function drawMeta(canvas) {
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#000";
+  ctx.font = "bold 28px Arial";
+  ctx.textAlign = "left";
+
+  ctx.fillText(CONFIG.storeName, 20, 40);
+  
+  ctx.font = "20px Arial";
+  const date = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  ctx.fillText(date, 20, canvas.height - 20);
+}
+
+/* =====================
+   QR 생성
+===================== */
+function generateQR(canvas) {
+  return new Promise((resolve) => {
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      qrImg.src =
+        "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+        encodeURIComponent(url);
+      
+      qrImg.onload = () => resolve();
+      qrImg.onerror = () => resolve();
+    });
+  });
+}
+
+/* =====================
+   리셋
+===================== */
+function resetKiosk() {
+  resultImg.src = "";
+  resultImg.classList.remove('show');
+  qrImg.src = "";
+  qrImg.classList.remove('show');
+  photos = [];
+  photoIndicatorEl.innerHTML = '';
+  progressEl.textContent = "✅ 준비 완료! 촬영 시작 버튼을 눌러주세요";
+  progressEl.style.color = "#4caf50";
+  startBtn.disabled = false;
+  startBtn.textContent = "촬영 시작 🎬";
+  isBusy = false;
+  video.style.filter = selectedFilter;
+}
+
+/* =====================
+   초기화
+===================== */
+window.addEventListener('load', () => {
+  initPhotoIndicator();
+  requestCamera();
+});
+
+/* =====================
+   페이지 종료 시 정리
+===================== */
+window.addEventListener('beforeunload', () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+  if (cameraTimeout) {
+    clearTimeout(cameraTimeout);
+  }
+});
+</script>
+
+</body>
+</html>
